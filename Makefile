@@ -1,4 +1,4 @@
-obj-m := lfprng.o
+obj-m := sysInterposter.o
 KDIR := /lib/modules/$(shell uname -r)/build
 PWD := $(shell pwd)
 

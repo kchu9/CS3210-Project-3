@@ -6,7 +6,7 @@ MODULE_LICENSE("GPL");
  
 #define MODULE_NAME "[sysmon] "
 static struct kprobe probe;
- 
+static uid_t uid; 
 /* pt_regs defined in include/asm-x86/ptrace.h
  *
  * For information associating registers with function arguments, see:
@@ -14,6 +14,7 @@ static struct kprobe probe;
  */
 static int sysmon_intercept_before(struct kprobe *kp, struct pt_regs *regs)
 {
+
     int ret = 0;
     if (current->uid != uid)
         return 0;
@@ -26,7 +27,7 @@ static int sysmon_intercept_before(struct kprobe *kp, struct pt_regs *regs)
                     (uintptr_t)regs->rdi, (char*)regs->rdi, (int)regs->rsi);
             break;
         default:
-            ret = -1;
+            ret = 100;
             break;
     }
     return ret;
@@ -36,10 +37,12 @@ static void sysmon_intercept_after(struct kprobe *kp, struct pt_regs *regs,
         unsigned long flags)
 {
     /* Here you could capture the return code if you wanted. */
+   /* printk("intercept successful");*/
 }
  
 int init_module(void)
-{
+{	
+    uid=282853;
     probe.symbol_name = "sys_mkdir";
     probe.pre_handler = sysmon_intercept_before; /* called prior to function */
     probe.post_handler = sysmon_intercept_after; /* called on function return */
