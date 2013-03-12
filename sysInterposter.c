@@ -5,10 +5,10 @@
 MODULE_LICENSE("GPL");
  
 #define MODULE_NAME "[sysmon] "
-static int numElements=4;
-static struct kprobe probe[4];
+static int numElements=10;
+static struct kprobe probe[10];
 static uid_t uid;
-static char *sysCalls[]={"sys_mkdir","sys_rmdir","sys_access","sys_brk"}; 
+static char *sysCalls[]={"sys_gettid","sys_getpid","sys_dup","stub_clone","sys_chmod","sys_chdir","sys_mkdir","sys_rmdir","sys_brk","sys_access"}; 
 /* pt_regs defined in include/asm-x86/ptrace.h
  *
  * For information associating registers with function arguments, see:
@@ -44,11 +44,41 @@ static int sysmon_intercept_before(struct kprobe *kp, struct pt_regs *regs)
 	    break;
 	case __NR_brk:
 	     printk(KERN_INFO MODULE_NAME 
-                    "brk call: %lu %d %d args 0x%lu '%s' %d\n",
-                    val, current->pid, current->tgid,
-                    (uintptr_t)regs->rdi, (char*)regs->rdi, (int)regs->rsi);
+                    "brk call: %lu %d %d args 0x \n",
+                    val, current->pid, current->tgid);
             
 	    break;
+	case __NR_chdir:
+	     printk(KERN_INFO MODULE_NAME 
+                    "chdir call: %lu %d %d args 0x \n",
+                    val, current->pid, current->tgid);
+            
+	    break;
+	case __NR_chmod:
+	     printk(KERN_INFO MODULE_NAME
+                    /* sycall pid tid args.. */
+                    "chmod call: %lu %d %d args 0x%lu '%s' %d\n",
+                    val, current->pid, current->tgid,
+                    (uintptr_t)regs->rdi, (char*)regs->rdi, (int)regs->rsi);
+            break;
+	case __NR_clone:
+	     printk(KERN_INFO MODULE_NAME 
+                    "clone call: %lu %d %d args 0x \n",
+                    val, current->pid, current->tgid);
+            
+	    break;
+	case __NR_getpid:
+	     printk(KERN_INFO MODULE_NAME 
+                    "getpid call: %lu %d %d args 0x \n",
+                    val, current->pid, current->tgid);
+            
+	    break;
+	case __NR_gettid:
+	     printk(KERN_INFO MODULE_NAME 
+                    "gettid call: %lu %d %d args 0x \n",
+                    val, current->pid, current->tgid);
+	    break;
+
 	default:
             ret = 100;
             break;
