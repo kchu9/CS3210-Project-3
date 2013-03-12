@@ -8,7 +8,7 @@ MODULE_LICENSE("GPL");
 static int numElements=10;
 static struct kprobe probe[10];
 static uid_t uid;
-static char *sysCalls[]={"sys_gettid","sys_getpid","sys_dup","stub_clone","sys_chmod","sys_chdir","sys_mkdir","sys_rmdir","sys_brk","sys_access"}; 
+static char *sysCalls[]={"sys_dup","sys_gettid","sys_getpid",/*"sys_dup",*/"stub_clone","sys_chmod","sys_chdir","sys_mkdir","sys_rmdir","sys_brk","sys_access"}; 
 /* pt_regs defined in include/asm-x86/ptrace.h
  *
  * For information associating registers with function arguments, see:
@@ -37,9 +37,8 @@ static int sysmon_intercept_before(struct kprobe *kp, struct pt_regs *regs)
 	case __NR_access:
 	     printk(KERN_INFO MODULE_NAME
                     /* sycall pid tid args.. */
-                    "access call: %lu %d %d args 0x%lu '%s' %d\n",
-                    val, current->pid, current->tgid,
-                    (uintptr_t)regs->rdi, (char*)regs->rdi, (int)regs->rsi);
+                    "access call: %lu %d %d args 0x\n",
+                    val, current->pid, current->tgid );
             
 	    break;
 	case __NR_brk:
@@ -57,9 +56,9 @@ static int sysmon_intercept_before(struct kprobe *kp, struct pt_regs *regs)
 	case __NR_chmod:
 	     printk(KERN_INFO MODULE_NAME
                     /* sycall pid tid args.. */
-                    "chmod call: %lu %d %d args 0x%lu '%s' %d\n",
-                    val, current->pid, current->tgid,
-                    (uintptr_t)regs->rdi, (char*)regs->rdi, (int)regs->rsi);
+                    "chmod call: %lu %d %d args 0x\n",
+                    val, current->pid, current->tgid);
+                    /*regs->rdi, regs->rdi, regs->rsi);*/
             break;
 	case __NR_clone:
 	     printk(KERN_INFO MODULE_NAME 
@@ -74,6 +73,11 @@ static int sysmon_intercept_before(struct kprobe *kp, struct pt_regs *regs)
             
 	    break;
 	case __NR_gettid:
+	     printk(KERN_INFO MODULE_NAME 
+                    "gettid call: %lu %d %d args 0x \n",
+                    val, current->pid, current->tgid);
+	    break;
+	case __NR_dup:
 	     printk(KERN_INFO MODULE_NAME 
                     "gettid call: %lu %d %d args 0x \n",
                     val, current->pid, current->tgid);
@@ -122,6 +126,6 @@ void cleanup_module(void)
    for(i=0;i<numElements;i++)
   {
     unregister_kprobe(&probe[i]);
-    printk(KERN_INFO MODULE_NAME "unloaded\n");
-	}
+   } printk(KERN_INFO MODULE_NAME "unloaded\n");
+	
 }
