@@ -5,10 +5,10 @@
 MODULE_LICENSE("GPL");
  
 #define MODULE_NAME "[sysmon] "
-static int numElements=2;
-static struct kprobe probe[2];
+static int numElements=4;
+static struct kprobe probe[4];
 static uid_t uid;
-static char *sysCalls[]={"sys_mkdir","sys_rmdir"}; 
+static char *sysCalls[]={"sys_mkdir","sys_rmdir","sys_access","sys_brk"}; 
 /* pt_regs defined in include/asm-x86/ptrace.h
  *
  * For information associating registers with function arguments, see:
@@ -35,7 +35,19 @@ static int sysmon_intercept_before(struct kprobe *kp, struct pt_regs *regs)
                     regs->rax, current->pid, current->tgid);
             break;
 	case __NR_access:
-	    printk(KERN_INFO MODULE_NAME "access call:  args 0x");
+	     printk(KERN_INFO MODULE_NAME
+                    /* sycall pid tid args.. */
+                    "access call: %lu %d %d args 0x%lu '%s' %d\n",
+                    val, current->pid, current->tgid,
+                    (uintptr_t)regs->rdi, (char*)regs->rdi, (int)regs->rsi);
+            
+	    break;
+	case __NR_brk:
+	     printk(KERN_INFO MODULE_NAME 
+                    "brk call: %lu %d %d args 0x%lu '%s' %d\n",
+                    val, current->pid, current->tgid,
+                    (uintptr_t)regs->rdi, (char*)regs->rdi, (int)regs->rsi);
+            
 	    break;
 	default:
             ret = 100;
@@ -55,11 +67,14 @@ int init_module(void)
 {
     int i;	
     uid=282853;
-	printk(KERN_INFO MODULE_NAME "%s",sysCalls[0]);
+	
+   for(i=0;i<numElements;i++)
+   {
    /* probe.symbol_name = "sys_mkdir"; */   
-    probe[0].symbol_name = sysCalls[0];
-    probe[0].pre_handler = sysmon_intercept_before; /* called prior to function */
-    probe[0].post_handler = sysmon_intercept_after; /* called on function return */
+    probe[i].symbol_name = sysCalls[i];
+    probe[i].pre_handler = sysmon_intercept_before; /* called prior to function */
+    probe[i].post_handler = sysmon_intercept_after; /* called on function return */
+	}
 	for(i=0;i<numElements;i++)
 	{
  	 if (register_kprobe(&probe[i])) {
