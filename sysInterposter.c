@@ -9,7 +9,7 @@ MODULE_LICENSE("GPL");
  struct systemCallNode{
 double pid;
 double tgid;
-struct pt_regs *regs;
+struct pt_regs regs;
 struct list_head list; /*kernel list structur*/
 };
 static int systemCallListSize;
@@ -42,15 +42,22 @@ static int sysmon_intercept_before(struct kprobe *kp, struct pt_regs *regs)
 	aNewNode=kmalloc(sizeof(*aNewNode),GFP_KERNEL);
 	aNewNode->pid=current->pid;
 	aNewNode->tgid=current->tgid;
+	aNewNode->regs=*regs;
 	INIT_LIST_HEAD(&aNewNode->list);	
     		/*add to list*/
-	if(systemCallListSize<10)
+	if(systemCallListSize <10)
 	{
+	printk("Syscall Number: %lu\n",regs->rax);
+	
 	list_add_tail(&aNewNode->list,&sysCallList.list);
 	systemCallListSize++;
 	}
 	else
 	{
+	printk("Syscall Number: %lu Size: %lu \n",regs->rax,sizeof(sysCallList));
+	
+	list_add_tail(&aNewNode->list,&sysCallList.list);
+	systemCallListSize++;
 
 	}
 	spin_unlock_irq(&mr_lock);
@@ -77,11 +84,11 @@ static void sysmon_intercept_after(struct kprobe *kp, struct pt_regs *regs,
 int init_module(void)
 {
 /*initialize linked list*/
-	LIST_HEAD(sysCallList);	
-
     int i;	
     uid=282853;
     systemCallListSize=0;
+	INIT_LIST_HEAD(&sysCallList.list);	
+
 
    for(i=0;i<numElements;i++)
    {
@@ -107,7 +114,7 @@ void cleanup_module(void)
     int i=0;
   struct systemCallNode *aNode,*tmp;
   list_for_each_entry_safe(aNode,tmp,&sysCallList.list,list){
-	printk(KERN_INFO "freeing node");
+	printk(KERN_INFO "freeing node with Sys: %lu\n",aNode->regs.rax);
 	list_del(&aNode->list);
 	kfree(aNode);
 }	
