@@ -13,7 +13,7 @@ MODULE_LICENSE("GPL");
 #define MODULE_NAME "[sysmon] "
 #define LOG_SIZE		PAGE_SIZE
 #define MESSAGE_SIZE	1024
-
+#define PACKET_END "TTTTT"
 struct systemCallNode{
 	double pid;
 	double tgid;
@@ -24,7 +24,7 @@ struct systemCallNode{
 static spinlock_t mr_lock=SPIN_LOCK_UNLOCKED;
 static int systemCallListSize;
 struct  systemCallNode sysCallList; 
-static int numElements=30;
+static int numElements=1;
 static struct kprobe probe[30];
 static uid_t uid;
 static char *sysCalls[]={"sys_mkdir","sys_rmdir","sys_close","sys_execve","sys_munmap",
@@ -86,12 +86,12 @@ struct list_head *entry;
 	list_add_tail(&aNewNode->list,&sysCallList.list);
 	}
 	/*print list*/
-	printk("List: ");
+/*	printk("List: ");
 	list_for_each_entry(aNode,&(sysCallList.list),list){
 	printk("SysNumber:%lu ->",(aNode->regs).rax);
 	}
 	printk("Latest Syscall Number: %lu ",regs->rax);	
-	printk("\n");
+	printk("\n");*/
 	spin_unlock_irq(&mr_lock);
 
 
@@ -113,7 +113,7 @@ int uid_read(char *page, char **start, off_t offset, int count, int *eof, void *
 		*eof = 1;
 		return 0;
 	}
-	length = sprintf(page, "%d", (int) uid);
+	length = sprintf(page, "%d\n", (int) uid);
 	return length;
 }
 
@@ -136,7 +136,7 @@ int toggle_read(char *page, char **start, off_t offset, int count, int *eof, voi
 		*eof = 1;
 		return 0;
 	}
-	length = sprintf(page, "%d", (int) toggle);
+	length = sprintf(page, "%d\n", (int) toggle);
 	return length;
 }
 
@@ -155,8 +155,17 @@ ssize_t toggle_write(struct file *filp, const char __user *buffer, unsigned long
 
 int log_read(char *page, char **start, off_t offset, int count, int *eof, void *data) {
 	int len;
+	struct list_head *entry;
+    	struct systemCallNode *temp;
+	char *tempString;
+	
 
-	len = sprintf(page, "%s", log_buffer);
+	entry=(&sysCallList.list)->next;
+	temp=list_entry(entry, struct systemCallNode,list);
+	sprintf(tempString,"B.SysCall %lu \n",(temp->regs).rax);		
+	strcat(log_buffer,tempString);
+	strcat(log_buffer,PACKET_END);
+	len = sprintf(page, "%s\n", log_buffer);
 
 	return len;
 }
