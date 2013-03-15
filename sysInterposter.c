@@ -168,7 +168,7 @@ ssize_t log_write(struct file *filp, const char __user *buffer, unsigned long le
 int init_sys_monitor(void) {
 /*initialize linked list*/
     int i;
-	ret = 0;
+	int ret = 0;
     uid=282853;
 	toggle = 1;
     systemCallListSize=0;
