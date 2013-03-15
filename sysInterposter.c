@@ -15,8 +15,8 @@ MODULE_LICENSE("GPL");
 #define MESSAGE_SIZE	1024
 #define PACKET_END "TTTTT"
 struct systemCallNode{
-	double pid;
-	double tgid;
+	pid_t pid;
+	pid_t tgid;
 	struct pt_regs regs;
 	struct list_head list; /*kernel list structure*/
 };
@@ -167,6 +167,9 @@ int log_read(char *page, char **start, off_t offset, int count, int *eof, void *
 	
 	entry=(&sysCallList.list)->prev;
 	temp=list_entry(entry, struct systemCallNode,list);
+/*	list_del_init(entry);
+	vmalloc(entry);
+	systemCallListSize--;*/
 // printk("size of node: %lu",sizeof("SysCall: PID: TGID: ARG0: ARG1: ARG2: ARG3: ARG4: ARG5: \n")+2*sizeof(double)+7*sizeof(long));
 	sprintf(tempString,"SysCall: %lu PID: %d TGID: %d ARG0: %s ARG1: %lu ARG2: %lu ARG3: %lu ARG4: %lu ARG5: %lu  \n",(temp->regs).rax,temp->pid,temp->tgid,(char *)((temp->regs).rdi),(temp->regs).rsi,(temp->regs).rdx,
 (temp->regs).r10,(temp->regs).r8,(temp->regs).r9);		
