@@ -162,7 +162,6 @@ int log_read(char *page, char **start, off_t offset, int count, int *eof, void *
 }
 
 ssize_t log_write(struct file *filp, const char __user *buffer, unsigned long len, void *data) {
-	*eof = 1;
 	return 0;
 }
 
