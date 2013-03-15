@@ -1,8 +1,9 @@
 #include <linux/kernel.h>
 #include <linux/kprobes.h>
 #include <linux/module.h>
- #include <linux/list.h>
+#include <linux/list.h>
 #include <linux/spinlock.h>
+
 MODULE_LICENSE("GPL");
  
 #define MODULE_NAME "[sysmon] "
@@ -61,21 +62,22 @@ struct list_head *entry;
 /*accessing tail value	entry=(&sysCallList.list); *head
 	entry=entry->prev;
 	*accesing tail valueprintk("Tail Node Entry: %lu",(list_entry(entry,struct systemCallNode, list)->regs.rax));
-*/
+*i/
 
 	/*delete from head attempt*/
-	entry=(&sysCallList.list)->next;
+	entry=(&sysCallList.list)->prev;/*->next to remove head*/
 	temp=list_entry(entry,struct systemCallNode,list);
-	printk("Head Node Entry: %lu",temp->regs.rax);
-/*	list_del(&temp->list);	
+//	printk("Head Node Entry: %lu  ",temp->regs.rax);
+	list_del_init(&temp->list);	
 	kfree(temp);
 	list_add_tail(&aNewNode->list,&sysCallList.list);
-*/	}
+	}
 	/*print list*/
-	printk(KERN_INFO "Latest Syscall Number: %lu List: ",regs->rax);
+	printk("List: ");
 	list_for_each_entry(aNode,&(sysCallList.list),list){
 	printk("SysNumber:%lu ->",(aNode->regs).rax);
 	}
+	printk("Latest Syscall Number: %lu ",regs->rax);	
 	printk("\n");
 	spin_unlock_irq(&mr_lock);
 
