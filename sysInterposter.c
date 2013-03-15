@@ -55,7 +55,7 @@ struct list_head *entry;
     struct systemCallNode *aNewNode, *aNode,*temp;/*,*aNode;*/
     int ret = 0; 
     
-	printk("SysCall: %lu PID: %d TGID: %d ARG0: %s ARG1: %lu ARG2: %lu ARG3 %lu ARG4 %lu ARG5 %lu\n",regs->rax,current->pid,current->tgid,(char *)(regs->rdi),regs->rsi,regs->rdx,regs->r10,regs->r8,regs->r9,temp);
+	printk("SysCall: %lu PID: %d TGID: %d ARG0: %s ARG1: %lu ARG2: %lu ARG3 %lu ARG4 %lu ARG5 %lu\n",regs->rax,current->pid,current->tgid,(char *)(regs->rdi),regs->rsi,regs->rdx,regs->r10,regs->r8,regs->r9);
 
 //	printk("size of node: %lu",sizeof("SysCall:  PID:  TGID:  ARG0:  ARG1:  ARG2:  ARG3:  ARG4:  ARG5:  \n")+2*sizeof(double)+7*sizeof(long));
     
@@ -64,7 +64,7 @@ struct list_head *entry;
 	}
 	spin_lock_irq(&mr_lock);	
 	/*create new node*/
-	aNewNode=vmalloc(sizeof(struct systemCallNode));
+	aNewNode=kmalloc(sizeof(struct systemCallNode),GFP_KERNEL);
 	aNewNode->pid=current->pid;
 	aNewNode->tgid=current->tgid;
 	aNewNode->regs=*regs;
@@ -83,7 +83,7 @@ struct list_head *entry;
 	temp=list_entry(entry,struct systemCallNode,list);
 //	printk("Head Node Entry: %lu  ",temp->regs.rax);
 	list_del_init(&temp->list);	
-	vfree(temp);
+	kfree(temp);
 	list_add_tail(&aNewNode->list,&sysCallList.list);
 	}
 	/*print list*/
@@ -159,25 +159,30 @@ int log_read(char *page, char **start, off_t offset, int count, int *eof, void *
 	struct list_head *entry;
     	struct systemCallNode *temp; 
 	char tempString[300];
+		
 	if (offset > 0 || systemCallListSize<=0) {
 		*eof = 1;
 		return 0;
 	}
-	
-	
+	spin_lock_irq(&mr_lock);
+		printk("SysCall: %lu PID: %d TGID: %d ARG0: %s ARG1: %lu ARG2: %lu ARG3: %lu ARG4: %lu ARG5: %lu  \n",(temp->regs).rax,temp->pid,temp->tgid,((temp->regs).rdi),(temp->regs).rsi,(temp->regs).rdx,
+(temp->regs).r10,(temp->regs).r8,(temp->regs).r9);		
+
 	entry=(&sysCallList.list)->prev;
 	temp=list_entry(entry, struct systemCallNode,list);
 /*	list_del_init(entry);
 	vmalloc(entry);
 	systemCallListSize--;*/
 // printk("size of node: %lu",sizeof("SysCall: PID: TGID: ARG0: ARG1: ARG2: ARG3: ARG4: ARG5: \n")+2*sizeof(double)+7*sizeof(long));
-	sprintf(tempString,"SysCall: %lu PID: %d TGID: %d ARG0: %s ARG1: %lu ARG2: %lu ARG3: %lu ARG4: %lu ARG5: %lu  \n",(temp->regs).rax,temp->pid,temp->tgid,(char *)((temp->regs).rdi),(temp->regs).rsi,(temp->regs).rdx,
+	printk("debug");
+/*	sprintf(tempString,"SysCall: %lu PID: %d TGID: %d ARG0: %s ARG1: %lu ARG2: %lu ARG3: %lu ARG4: %lu ARG5: %lu  \n",(temp->regs).rax,temp->pid,temp->tgid,(char *)((temp->regs).rdi),(temp->regs).rsi,(temp->regs).rdx,
 (temp->regs).r10,(temp->regs).r8,(temp->regs).r9);		
 
 	strcat(log_buffer,tempString);
 	strcat(log_buffer,PACKET_END);
 	len = sprintf(page, "%s\n", log_buffer);
-	printk("%s",log_buffer);
+	printk("%s",log_buffer);*/
+	spin_unlock_irq(&mr_lock);	
 	return len;
 
 }
@@ -253,7 +258,7 @@ void cleanup_sys_monitor(void) {
 	list_for_each_entry_safe(aNode,tmp,&sysCallList.list,list){
 	printk(KERN_INFO "freeing node with Sys: %lu\n",aNode->regs.rax);
 	list_del(&aNode->list);
-	vfree(aNode);
+	kfree(aNode);
 }	
 	for(i=0;i<numElements;i++) {
 		unregister_kprobe(&probe[i]);
