@@ -118,6 +118,7 @@ int uid_read(char *page, char **start, off_t offset, int count, int *eof, void *
 }
 
 ssize_t uid_write(struct file *filp, const char __user *buffer, unsigned long len, void *data) {
+	char temp[10];
 	if(copy_from_user(temp, buffer, len))
 		return -EFAULT;
 
@@ -140,12 +141,14 @@ int toggle_read(char *page, char **start, off_t offset, int count, int *eof, voi
 }
 
 ssize_t toggle_write(struct file *filp, const char __user *buffer, unsigned long len, void *data) {
+	char temp[10];
+
 	if(copy_from_user(temp, buffer, len))
 		return -EFAULT;
 
 	((char*)temp)[length] = '\0';
 
-	sscanf((const char*)temp, "%d", &uid);
+	sscanf((const char*)temp, "%d", &toggle);
 
 	return len;
 }
@@ -188,12 +191,14 @@ int init_sys_monitor(void) {
 
 	//ProcFS
 	uid_buffer = (char *) vmalloc(LOG_SIZE);
-	toggle_buffer = (char *) vmalloc(LOG_SIZE);
-	log_buffer = (char *) vmalloc(LOG_SIZE);
+	toggle_buffer = (char *) vmalloc(MESSAGE_SIZE);
+	log_buffer = (char *) vmalloc(MESSAGE_SIZE);
 
 	if(!log_buffer || !toggle_buffer || !log_buffer) 
 		ret = -ENOMEM;
 	else {
+		memset(uid_buffer, 0, MESSAGE_SIZE);
+		memset(toggle_buffer, 0, MESSAGE_SIZE);
 		memset(log_buffer, 0, LOG_SIZE);
 
 		proc_uid = create_proc_entry("sysmon_uid", 0600, NULL);
