@@ -55,7 +55,7 @@ struct list_head *entry;
     struct systemCallNode *aNewNode, *aNode,*temp;/*,*aNode;*/
     int ret = 0; 
     
-	printk("SysCall: %lu PID: %d TGID: %d ARG0: %s ARG1: %lu ARG2: %lu ARG3 %lu ARG4 %lu ARG5 %lu",regs->rax,current->pid,current->tgid,(char *)(regs->rdi),regs->rsi,regs->rdx,regs->r10,regs->r8,regs->r9,temp);
+	printk("SysCall: %lu PID: %d TGID: %d ARG0: %s ARG1: %lu ARG2: %lu ARG3 %lu ARG4 %lu ARG5 %lu\n",regs->rax,current->pid,current->tgid,(char *)(regs->rdi),regs->rsi,regs->rdx,regs->r10,regs->r8,regs->r9,temp);
 
 //	printk("size of node: %lu",sizeof("SysCall:  PID:  TGID:  ARG0:  ARG1:  ARG2:  ARG3:  ARG4:  ARG5:  \n")+2*sizeof(double)+7*sizeof(long));
     
@@ -64,10 +64,11 @@ struct list_head *entry;
 	}
 	spin_lock_irq(&mr_lock);	
 	/*create new node*/
-	aNewNode=kmalloc(sizeof(*aNewNode),GFP_KERNEL);
+	aNewNode=vmalloc(sizeof(struct systemCallNode));
 	aNewNode->pid=current->pid;
 	aNewNode->tgid=current->tgid;
 	aNewNode->regs=*regs;
+	printk("after mallocPID: %d rdi %s\n",aNewNode->pid, (char *)((aNewNode->regs).rdi));
 	INIT_LIST_HEAD(&aNewNode->list);	
 	
     		/*add to list*/
@@ -82,7 +83,7 @@ struct list_head *entry;
 	temp=list_entry(entry,struct systemCallNode,list);
 //	printk("Head Node Entry: %lu  ",temp->regs.rax);
 	list_del_init(&temp->list);	
-	kfree(temp);
+	vfree(temp);
 	list_add_tail(&aNewNode->list,&sysCallList.list);
 	}
 	/*print list*/
@@ -249,7 +250,7 @@ void cleanup_sys_monitor(void) {
 	list_for_each_entry_safe(aNode,tmp,&sysCallList.list,list){
 	printk(KERN_INFO "freeing node with Sys: %lu\n",aNode->regs.rax);
 	list_del(&aNode->list);
-	kfree(aNode);
+	vfree(aNode);
 }	
 	for(i=0;i<numElements;i++) {
 		unregister_kprobe(&probe[i]);
