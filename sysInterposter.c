@@ -55,10 +55,10 @@ struct list_head *entry;
     struct systemCallNode *aNewNode, *aNode,*temp;/*,*aNode;*/
     int ret = 0; 
     
-/*	printk("SysCall: %lu PID: %d TGID: %d ARG0: %lu ARG1: %lu ARG2: %lu ARG3 %lu ARG4 %lu ARG5 %lu",regs->rax,current->pid,current->tgid,regs->rdi,regs->rsi,regs->rdx,regs->r10,regs->r8,regs->r9,temp);
+	printk("SysCall: %lu PID: %d TGID: %d ARG0: %s ARG1: %lu ARG2: %lu ARG3 %lu ARG4 %lu ARG5 %lu",regs->rax,current->pid,current->tgid,(char *)(regs->rdi),regs->rsi,regs->rdx,regs->r10,regs->r8,regs->r9,temp);
 
-	printk("size of node: %lu",sizeof("SysCall:  PID:  TGID:  ARG0:  ARG1:  ARG2:  ARG3:  ARG4:  ARG5:  \n")+2*sizeof(double)+7*sizeof(long));
-*/    
+//	printk("size of node: %lu",sizeof("SysCall:  PID:  TGID:  ARG0:  ARG1:  ARG2:  ARG3:  ARG4:  ARG5:  \n")+2*sizeof(double)+7*sizeof(long));
+    
      if (current->uid != uid){
 	 	return 0;
 	}
@@ -156,18 +156,26 @@ ssize_t toggle_write(struct file *filp, const char __user *buffer, unsigned long
 int log_read(char *page, char **start, off_t offset, int count, int *eof, void *data) {
 	int len;
 	struct list_head *entry;
-    	struct systemCallNode *temp;
-	char *tempString;
+    	struct systemCallNode *temp; 
+	char tempString[300];
+	if (offset > 0 || systemCallListSize<=0) {
+		*eof = 1;
+		return 0;
+	}
 	
-
-	entry=(&sysCallList.list)->next;
+	
+	entry=(&sysCallList.list)->prev;
 	temp=list_entry(entry, struct systemCallNode,list);
-	sprintf(tempString,"B.SysCall %lu \n",(temp->regs).rax);		
+// printk("size of node: %lu",sizeof("SysCall: PID: TGID: ARG0: ARG1: ARG2: ARG3: ARG4: ARG5: \n")+2*sizeof(double)+7*sizeof(long));
+	sprintf(tempString,"SysCall: %lu PID: %d TGID: %d ARG0: %s ARG1: %lu ARG2: %lu ARG3: %lu ARG4: %lu ARG5: %lu  \n",(temp->regs).rax,temp->pid,temp->tgid,(char *)((temp->regs).rdi),(temp->regs).rsi,(temp->regs).rdx,
+(temp->regs).r10,(temp->regs).r8,(temp->regs).r9);		
+
 	strcat(log_buffer,tempString);
 	strcat(log_buffer,PACKET_END);
 	len = sprintf(page, "%s\n", log_buffer);
-
+	printk("%s",log_buffer);
 	return len;
+
 }
 
 ssize_t log_write(struct file *filp, const char __user *buffer, unsigned long len, void *data) {
@@ -232,7 +240,6 @@ int init_sys_monitor(void) {
 		}
 	}
 
-    printk(KERN_INFO MODULE_NAME "loaded\n");
     return 0;
 }
  
