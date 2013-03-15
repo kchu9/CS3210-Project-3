@@ -109,7 +109,7 @@ static void sysmon_intercept_after(struct kprobe *kp, struct pt_regs *regs,
 int uid_read(char *page, char **start, off_t offset, int count, int *eof, void *data) {
 	int length;
 
-	if (off > 0) {
+	if (offset > 0) {
 		*eof = 1;
 		return 0;
 	}
@@ -122,7 +122,7 @@ ssize_t uid_write(struct file *filp, const char __user *buffer, unsigned long le
 	if(copy_from_user(temp, buffer, len))
 		return -EFAULT;
 
-	((char*)temp)[length] = '\0';
+	((char*)temp)[len] = '\0';
 
 	sscanf((const char*)temp, "%d", &uid);
 
@@ -132,7 +132,7 @@ ssize_t uid_write(struct file *filp, const char __user *buffer, unsigned long le
 int toggle_read(char *page, char **start, off_t offset, int count, int *eof, void *data) {
 	int length;
 
-	if (off > 0) {
+	if (offset > 0) {
 		*eof = 1;
 		return 0;
 	}
@@ -146,7 +146,7 @@ ssize_t toggle_write(struct file *filp, const char __user *buffer, unsigned long
 	if(copy_from_user(temp, buffer, len))
 		return -EFAULT;
 
-	((char*)temp)[length] = '\0';
+	((char*)temp)[len] = '\0';
 
 	sscanf((const char*)temp, "%d", &toggle);
 
