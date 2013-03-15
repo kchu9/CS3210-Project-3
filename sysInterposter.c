@@ -3,10 +3,21 @@
 #include <linux/module.h>
 #include <linux/list.h>
 #include <linux/spinlock.h>
+#include <linux/proc_fs.h>
+#include <linux/string.h>
+#include <linux/vmalloc.h>
+#include <asm/uaccess.h>
 
 MODULE_LICENSE("GPL");
  
 #define MODULE_NAME "[sysmon] "
+
+#define MODULE_NAME		"[socketModule] "
+#define LOG_SIZE		PAGE_SIZE
+#define MESSAGE_SIZE	1024
+static struct proc_dir_entry *proc_entry;
+static char *log_buffer;
+
  struct systemCallNode{
 double pid;
 double tgid;
@@ -20,6 +31,11 @@ static int numElements=30;
 static struct kprobe probe[30];
 static uid_t uid;
 static char *sysCalls[]={"sys_mkdir","sys_rmdir","sys_close","sys_execve","sys_munmap","sys_lseek","sys_getdents","sys_newlstat","sys_fcntl","sys_exit_group","sys_ioctl","sys_pipe","sys_select","sys_wait4","sys_newfstat","sys_mmap","sys_newstat","sys_read","sys_write","sys_open","stub_fork","sys_dup2","sys_dup","sys_gettid","sys_getpid","stub_clone","sys_chmod","sys_chdir","sys_brk","sys_access"}; 
+
+
+
+
+
 /* pt_regs defined in include/asm-x86/ptrace.h
  *
  * For information associating registers with function arguments, see:
@@ -56,16 +72,9 @@ struct list_head *entry;
 	}
 	else
 	{
-	/**printk("Syscall Number: %lu Size: %d \n",regs->rax,systemCallListSize);
-	*/
-
-/*accessing tail value	entry=(&sysCallList.list); *head
-	entry=entry->prev;
-	*accesing tail valueprintk("Tail Node Entry: %lu",(list_entry(entry,struct systemCallNode, list)->regs.rax));
-*i/
 
 	/*delete from head attempt*/
-	entry=(&sysCallList.list)->prev;/*->next to remove head*/
+	entry=(&sysCallList.list)->next;/*->prev to remove tail*/
 	temp=list_entry(entry,struct systemCallNode,list);
 //	printk("Head Node Entry: %lu  ",temp->regs.rax);
 	list_del_init(&temp->list);	
@@ -83,13 +92,6 @@ struct list_head *entry;
 
 
 
-	/*switch (val) {
-	case __NR_close:
-	     printk(KERN_INFO MODULE_NAME 
-                    "close call: %lu %d %d args 0x \n",
-                    regs->rdi, current->pid, current->tgid);
-	    break;
-    }*/
     return ret;
 }
  
