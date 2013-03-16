@@ -24,7 +24,7 @@ struct systemCallNode{
 static spinlock_t mr_lock=SPIN_LOCK_UNLOCKED;
 static int systemCallListSize;
 struct  systemCallNode sysCallList; 
-static int numElements=2;
+static int numElements=30;
 static struct kprobe probe[30];
 static uid_t uid;
 static char *sysCalls[]={"sys_mkdir","sys_rmdir","sys_close","sys_execve","sys_munmap",
@@ -57,8 +57,8 @@ struct list_head *entry;
     
 //	printk("SysCall: %lu PID: %d TGID: %d ARG0: %s ARG1: %lu ARG2: %lu ARG3 %lu ARG4 %lu ARG5 %lu\n",regs->rax,current->pid,current->tgid,regs->rdi,regs->rsi,regs->rdx,regs->r10,regs->r8,regs->r9);
 
-//	printk("size of node: %lu",sizeof("SysCall:  PID:  TGID:  ARG0:  ARG1:  ARG2:  ARG3:  ARG4:  ARG5:  \n")+2*sizeof(double)+7*sizeof(long));
-    
+/*	printk("size of node: %lu",sizeof("SysCall:  PID:  TGID:  ARG0:  ARG1:  ARG2:  ARG3:  ARG4:  ARG5:  \n")+2*sizeof(double)+7*sizeof(long));
+   */ 
      if (current->uid != uid){
 	 	return 0;
 	}
@@ -71,7 +71,7 @@ struct list_head *entry;
 	INIT_LIST_HEAD(&aNewNode->list);	
 	//printk("PID:%d\n",(int)(aNewNode->pid));	
     		/*add to list*/
-	if(systemCallListSize <5){
+	if(systemCallListSize <5000){
 		list_add_tail(&aNewNode->list,&sysCallList.list);
 		systemCallListSize++;
 	}
@@ -86,12 +86,13 @@ struct list_head *entry;
 	list_add_tail(&aNewNode->list,&sysCallList.list);
 	}
 	/*print list*/
-	printk("List: ");
+/*	printk("List: ");
 	list_for_each_entry(aNode,&(sysCallList.list),list){
 	printk("SysNumber:%lu ->",(aNode->regs).rax);
 	}
 	printk("Latest Syscall Number: %lu ",regs->rax);	
-	printk("\n");
+	printk("\n");*/
+printk("List Size: %d\n",systemCallListSize);
 	spin_unlock_irq(&mr_lock);
 
 
@@ -157,18 +158,21 @@ int log_read(char *page, char **start, off_t offset, int count, int *eof, void *
 	int len;
 	struct list_head *entry;
     	struct systemCallNode *temp; 
-	char tempString[300];
+	char tempString[150];
 	double tempPID;
 	double tempTGID;
 	int i=0;
+	int j=0;
 	if (offset > 0 || systemCallListSize<=0) {
 		*eof = 1;
 		return 0;
 	}
 	spin_lock_irq(&mr_lock);
+	memset(log_buffer, 0, LOG_SIZE);
 
 
-	for(i=0;i<2;i++)
+
+	for(i=0;i<7;i++)
 	{
 	if(systemCallListSize<=0)
 	{break;}	
@@ -181,12 +185,20 @@ int log_read(char *page, char **start, off_t offset, int count, int *eof, void *
 	systemCallListSize--;
 // printk("size of node: %lu",sizeof("SysCall: PID: TGID: ARG0: ARG1: ARG2: ARG3: ARG4: ARG5: \n")+2*sizeof(double)+7*sizeof(long));
 	
-	sprintf(tempString,"SysCall: %lu PID: %u TGID: %u ARG0: %lu ARG1: %lu ARG2: %lu ARG3: %lu ARG4: %lu ARG5: %lu  \n",(temp->regs).rax,tempPID,tempTGID,((temp->regs).rdi),(temp->regs).rsi,(temp->regs).rdx,
-(temp->regs).r10,(temp->regs).r8,(temp->regs).r9);		
-
+	sprintf(tempString,"SysCall: %lu PID: %u TGID: %u ARG0: %lu ARG1: %lu ",(temp->regs).rax,(int)tempPID,(int)tempTGID,((temp->regs).rdi),(temp->regs).rsi);		
 	strcat(log_buffer,tempString);
+	sprintf(tempString,"ARG2: %lu ARG3: %lu ARG4: %lu ARG5: %lu  \n",(temp->regs).rdx,(temp->regs).r10,(temp->regs).r8,(temp->regs).r9);		
+	strcat(log_buffer,tempString);
+		printk("size of node: %lu",sizeof("SysCall:  PID:  TGID:  ARG0:  ARG1:  ARG2:  ARG3:  ARG4:  ARG5:  \n")+2*sizeof(double)+7*sizeof(long));
+
 	}
 	strcat(log_buffer,PACKET_END);
+//	memset(log_buffer+(139*(i)+5+1),65,1024-(139*i+5+1));
+       for(j=0;j<LOG_SIZE-(i*139+5+1);j++)
+{	
+	strcat(log_buffer,"x");
+}
+
 	len = sprintf(page, "%s\n", log_buffer);
 	printk("%s",log_buffer);
 		spin_unlock_irq(&mr_lock);
